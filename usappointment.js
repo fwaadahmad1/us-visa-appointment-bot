@@ -6,7 +6,7 @@ const axios = require("axios");
   //#region Command line args
   const args = parseArgs(process.argv.slice(2), {
     string: ["u", "p", "c", "a", "n", "d", "r"],
-    boolean: ["g"],
+    boolean: ["g", "resch"],
   });
   const currentDate = new Date(args.d);
   const usernameInput = args.u;
@@ -16,6 +16,7 @@ const axios = require("axios");
   const consularId = args.c;
   const userToken = args.n;
   const groupAppointment = args.g;
+  const reschdule = args.resch;
   const region = args.r;
   //#endregion
 
@@ -359,93 +360,171 @@ const axios = require("axios");
       );
     }
 
+    if (!reschdule) {
+      return false;
+    }
+
+    console.log("Rescheduling Appointment");
+
     // Go to appointment page
-    // {
-    //     const targetPage = page;
-    //     await targetPage.goto('https://ais.usvisa-info.com/en-' + region + '/niv/schedule/' + appointmentId + '/appointment', { waitUntil: 'domcontentloaded' });
-    //     await sleep(1000);
-    // }
+    {
+      const targetPage = page;
+      await targetPage.goto(
+        "https://ais.usvisa-info.com/en-" +
+          region +
+          "/niv/schedule/" +
+          appointmentId +
+          "/appointment",
+        { waitUntil: "domcontentloaded" }
+      );
+      await sleep(1000);
+    }
 
     // Select multiple people if it is a group appointment
-    // {
-    //     if(groupAppointment){
-    //       const targetPage = page;
-    //       const element = await waitForSelectors([["aria/Continue"],["#main > div.mainContent > form > div:nth-child(3) > div > input"]], targetPage, { timeout, visible: true });
-    //       await scrollIntoViewIfNeeded(element, timeout);
-    //       await element.click({ offset: { x: 70.515625, y: 25.25} });
-    //       await sleep(1000);
-    //     }
-    // }
+    {
+      if (groupAppointment) {
+        const targetPage = page;
+        const element = await waitForSelectors(
+          [
+            ["aria/Continue"],
+            ["#main > div.mainContent > form > div:nth-child(3) > div > input"],
+          ],
+          targetPage,
+          { timeout, visible: true }
+        );
+        await scrollIntoViewIfNeeded(element, timeout);
+        await element.click({ offset: { x: 70.515625, y: 25.25 } });
+        await sleep(1000);
+      }
+    }
 
     // Select the specified consular from the dropdown
-    // {
-    //     const targetPage = page;
-    //     const element = await waitForSelectors([["aria/Consular Section Appointment","aria/[role=\"combobox\"]"],["#appointments_consulate_appointment_facility_id"]], targetPage, { timeout, visible: true });
-    //     await scrollIntoViewIfNeeded(element, timeout);
-    //     await page.select("#appointments_consulate_appointment_facility_id", consularId);
-    //     await sleep(1000);
-    // }
+    {
+      const targetPage = page;
+      const element = await waitForSelectors(
+        [
+          ["aria/Consular Section Appointment", 'aria/[role="combobox"]'],
+          ["#appointments_consulate_appointment_facility_id"],
+        ],
+        targetPage,
+        { timeout, visible: true }
+      );
+      await scrollIntoViewIfNeeded(element, timeout);
+      await page.select(
+        "#appointments_consulate_appointment_facility_id",
+        earliestAvailableDateLocation
+      );
+      await sleep(1000);
+    }
 
     // Click on date input
-    // {
-    //     const targetPage = page;
-    //     const element = await waitForSelectors([["aria/Date of Appointment *"],["#appointments_consulate_appointment_date"]], targetPage, { timeout, visible: true });
-    //     await scrollIntoViewIfNeeded(element, timeout);
-    //     await element.click({ offset: { x: 394.5, y: 17.53125} });
-    //     await sleep(1000);
-    // }
+    {
+      const targetPage = page;
+      const element = await waitForSelectors(
+        [
+          ["aria/Date of Appointment *"],
+          ["#appointments_consulate_appointment_date"],
+        ],
+        targetPage,
+        { timeout, visible: true }
+      );
+      await scrollIntoViewIfNeeded(element, timeout);
+      await element.click({ offset: { x: 394.5, y: 17.53125 } });
+      await sleep(1000);
+    }
 
     // Keep clicking next button until we find the first available date and click to that date
-    // {
-    //     const targetPage = page;
-    //     while (true) {
-    //       try {
-    //         const element = await waitForSelectors([["aria/25[role=\"link\"]"],["#ui-datepicker-div > div.ui-datepicker-group.ui-datepicker-group > table > tbody > tr > td.undefined > a"]], targetPage, { timeout:smallTimeout, visible: true });
-    //         await scrollIntoViewIfNeeded(element, timeout);
-    //         await page.click('#ui-datepicker-div > div.ui-datepicker-group.ui-datepicker-group > table > tbody > tr > td.undefined > a');
-    //         await sleep(500);
-    //         break;
-    //       } catch (err) {
-    //         {
-    //             const targetPage = page;
-    //             const element = await waitForSelectors([["aria/Next","aria/[role=\"generic\"]"],["#ui-datepicker-div > div.ui-datepicker-group.ui-datepicker-group-last > div > a > span"]], targetPage, { timeout, visible: true });
-    //             await scrollIntoViewIfNeeded(element, timeout);
-    //             await element.click({ offset: { x: 4, y: 9.03125} });
-    //         }
-    //       }
-    //     }
-    // }
+    {
+      const targetPage = page;
+      while (true) {
+        try {
+          const element = await waitForSelectors(
+            [
+              ['aria/25[role="link"]'],
+              [
+                "#ui-datepicker-div > div.ui-datepicker-group.ui-datepicker-group > table > tbody > tr > td.undefined > a",
+              ],
+            ],
+            targetPage,
+            { timeout: smallTimeout, visible: true }
+          );
+          await scrollIntoViewIfNeeded(element, timeout);
+          await page.click(
+            "#ui-datepicker-div > div.ui-datepicker-group.ui-datepicker-group > table > tbody > tr > td.undefined > a"
+          );
+          await sleep(500);
+          break;
+        } catch (err) {
+          {
+            const targetPage = page;
+            const element = await waitForSelectors(
+              [
+                ["aria/Next", 'aria/[role="generic"]'],
+                [
+                  "#ui-datepicker-div > div.ui-datepicker-group.ui-datepicker-group-last > div > a > span",
+                ],
+              ],
+              targetPage,
+              { timeout, visible: true }
+            );
+            await scrollIntoViewIfNeeded(element, timeout);
+            await element.click({ offset: { x: 4, y: 9.03125 } });
+          }
+        }
+      }
+    }
 
     // Select the first available Time from the time dropdown
-    // {
-    //     const targetPage = page;
-    //     const element = await waitForSelectors([["#appointments_consulate_appointment_time"]], targetPage, { timeout, visible: true });
-    //     await scrollIntoViewIfNeeded(element, timeout);
-    //     await page.evaluate(() => {
-    //       document.querySelector('#appointments_consulate_appointment_time option:nth-child(2)').selected = true;
-    //       const event = new Event('change', {bubbles: true});
-    //       document.querySelector('#appointments_consulate_appointment_time').dispatchEvent(event);
-    //     })
-    //     await sleep(1000);
-    // }
+    {
+      const targetPage = page;
+      const element = await waitForSelectors(
+        [["#appointments_consulate_appointment_time"]],
+        targetPage,
+        { timeout, visible: true }
+      );
+      await scrollIntoViewIfNeeded(element, timeout);
+      await page.evaluate(() => {
+        document.querySelector(
+          "#appointments_consulate_appointment_time option:nth-child(2)"
+        ).selected = true;
+        const event = new Event("change", { bubbles: true });
+        document
+          .querySelector("#appointments_consulate_appointment_time")
+          .dispatchEvent(event);
+      });
+      await sleep(1000);
+    }
 
     // Click on reschedule button
-    // {
-    //     const targetPage = page;
-    //     const element = await waitForSelectors([["aria/Reschedule"],["#appointments_submit"]], targetPage, { timeout, visible: true });
-    //     await scrollIntoViewIfNeeded(element, timeout);
-    //     await element.click({ offset: { x: 78.109375, y: 20.0625} });
-    //     await sleep(1000);
-    // }
+    {
+      const targetPage = page;
+      const element = await waitForSelectors(
+        [["aria/Reschedule"], ["#appointments_submit"]],
+        targetPage,
+        { timeout, visible: true }
+      );
+      await scrollIntoViewIfNeeded(element, timeout);
+      await element.click({ offset: { x: 78.109375, y: 20.0625 } });
+      await sleep(1000);
+    }
 
     // Click on submit button on the confirmation popup
-    // {
-    //   const targetPage = page;
-    //   const element = await waitForSelectors([["aria/Cancel"],["body > div.reveal-overlay > div > div > a.button.alert"]], targetPage, { timeout, visible: true });
-    //   await scrollIntoViewIfNeeded(element, timeout);
-    //   await page.click('body > div.reveal-overlay > div > div > a.button.alert');
-    //   await sleep(5000);
-    // }
+    {
+      const targetPage = page;
+      const element = await waitForSelectors(
+        [
+          ["aria/Cancel"],
+          ["body > div.reveal-overlay > div > div > a.button.alert"],
+        ],
+        targetPage,
+        { timeout, visible: true }
+      );
+      await scrollIntoViewIfNeeded(element, timeout);
+      await page.click(
+        "body > div.reveal-overlay > div > div > a.button.alert"
+      );
+      await sleep(5000);
+    }
 
     await browser.close();
     return true;
