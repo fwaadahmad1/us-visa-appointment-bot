@@ -287,18 +287,20 @@ const axios = require("axios");
       await targetPage.waitForNavigation();
     }
 
-    const consulateOptions = {
-      95: "Vancouver",
-      94: "Toronto",
-      89: "Calgary",
-      90: "Halifax",
-    };
+    const consulateOptions = consularId
+      ? { [consularId]: `${consularId}` }
+      : {
+          95: "Vancouver",
+          94: "Toronto",
+          89: "Calgary",
+          90: "Halifax",
+        };
 
     // We are logged in now. Check available dates from the API
     const availableDates = {};
     let isDateAvailable = false;
     let earliestAvailableDate = new Date();
-    let earliestAvailableDateLocation = "None";
+    let earliestAvailableDateLocation = -1;
     earliestAvailableDate.setFullYear(earliestAvailableDate.getFullYear() + 5);
     for (const id of Object.keys(consulateOptions)) {
       const targetPage = page;
@@ -323,14 +325,14 @@ const axios = require("axios");
       const value = await page.evaluate((el) => el.textContent, element);
       availableDates[id] = JSON.parse(value);
       if (availableDates[id].length <= 0) {
-        log("There are no available dates for consulate with id " + id);
+        log("There are no available dates for " + consulateOptions[id]);
       } else {
         const earliestAvailableDateInConsulate = new Date(
           availableDates[id][0]?.date
         );
         if (earliestAvailableDateInConsulate < earliestAvailableDate) {
           earliestAvailableDate = earliestAvailableDateInConsulate;
-          earliestAvailableDateLocation = consulateOptions[id];
+          earliestAvailableDateLocation = id;
         }
         isDateAvailable = true;
       }
@@ -356,7 +358,7 @@ const axios = require("axios");
         "Found an earlier date! " +
           earliestAvailableDate.toISOString().slice(0, 10) +
           " at: " +
-          earliestAvailableDateLocation
+          consulateOptions[earliestAvailableDateLocation] ?? ""
       );
     }
 
@@ -531,17 +533,22 @@ const axios = require("axios");
     //#endregion
   }
 
+  console.log(args);
   console.log("US visa Appointment bot has started!");
+  let count = 1;
   while (true) {
+    console.log("Checking count: " + count);
     try {
       const result = await runLogic();
 
       if (result) {
-        // notify("Successfully scheduled a new appointment");
+        notify("Successfully scheduled a new appointment");
         break;
       }
+      count += 1;
     } catch (err) {
       // Swallow the error and keep running in case we encountered an error.
+      console.log(err);
     }
 
     await sleep(retryTimeout);
